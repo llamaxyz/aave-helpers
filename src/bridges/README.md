@@ -8,11 +8,19 @@ The same contract exists on both chains with the same address, so this contract 
 
 `function withdraw(address token, uint256 amount) external;`
 
+Callable on Polygon to withdraw ERC20 token. It withdraws `amount` of passed `token` to mainnet.
+
 `function exit(bytes calldata burnProof) external;`
+
+Callable on Mainnet to finish the withdrawal process. Callable 30-90 minutes after `withdraw()` is called and proof is available via API.
 
 `function withdrawToCollector(address token) external;`
 
+Callable on Mainnet. Withdraws balance of held token to the Aave Collector.
+
 `function rescueTokens(address[] calldata tokens) external;`
+
+Callable on Polygon. Withdraws tokens from bridge contract back to Aave Collector on Polygon.
 
 ## Burn Proof Generation
 
