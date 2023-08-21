@@ -13,7 +13,7 @@ import {AavePolEthERC20Bridge} from './AavePolEthERC20Bridge.sol';
  */
 contract AavePolEthERC20BridgeTest is Test {
   event Exit();
-  event Withdraw(address token, uint256 amount);
+  event Bridge(address token, uint256 amount);
   event WithdrawToCollector(address token, uint256 amount);
 
   AavePolEthERC20Bridge bridgeMainnet;
@@ -35,12 +35,12 @@ contract AavePolEthERC20BridgeTest is Test {
   }
 }
 
-contract WithdrawTest is AavePolEthERC20BridgeTest {
+contract BridgeTest is AavePolEthERC20BridgeTest {
   function test_revertsIf_invalidChain() public {
     vm.selectFork(mainnetFork);
 
     vm.expectRevert(AavePolEthERC20Bridge.InvalidChain.selector);
-    bridgePolygon.withdraw(AaveV3EthereumAssets.USDC_UNDERLYING, 1_000e6);
+    bridgePolygon.bridge(AaveV3EthereumAssets.USDC_UNDERLYING, 1_000e6);
   }
 
   function test_successful() public {
@@ -53,8 +53,8 @@ contract WithdrawTest is AavePolEthERC20BridgeTest {
     vm.stopPrank();
 
     vm.expectEmit();
-    emit Withdraw(AaveV3PolygonAssets.USDC_UNDERLYING, amount);
-    bridgePolygon.withdraw(AaveV3PolygonAssets.USDC_UNDERLYING, amount);
+    emit Bridge(AaveV3PolygonAssets.USDC_UNDERLYING, amount);
+    bridgePolygon.bridge(AaveV3PolygonAssets.USDC_UNDERLYING, amount);
   }
 }
 
@@ -137,7 +137,7 @@ contract WithdrawToCollectorTest is AavePolEthERC20BridgeTest {
 
 /*
  * No good way of testing the full flow as proof is generated via API 30-90 minutes after the
- * withdraw() function is called on Polygon.
+ * bridge() function is called on Polygon.
  */
 contract ExitTest is AavePolEthERC20BridgeTest {
   function test_revertsIf_invalidChain() public {
