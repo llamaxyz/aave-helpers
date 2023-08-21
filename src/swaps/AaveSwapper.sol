@@ -15,14 +15,15 @@ import {IMilkman} from './interfaces/IMilkman.sol';
 contract AaveSwapper is Initializable, OwnableWithGuardian, Rescuable {
   using SafeERC20 for IERC20;
 
-  event SwapCanceled(address fromToken, address toToken, uint256 amount);
+  event SwapCanceled(address indexed fromToken, address indexed toToken, uint256 amount);
   event SwapRequested(
-    address fromToken,
-    address toToken,
+    address milkman,
+    address indexed fromToken,
+    address indexed toToken,
     address fromOracle,
     address toOracle,
     uint256 amount,
-    address recipient,
+    address indexed recipient,
     uint256 slippage
   );
 
@@ -66,7 +67,16 @@ contract AaveSwapper is Initializable, OwnableWithGuardian, Rescuable {
       data
     );
 
-    emit SwapRequested(fromToken, toToken, fromOracle, toOracle, amount, recipient, slippage);
+    emit SwapRequested(
+      milkman,
+      fromToken,
+      toToken,
+      fromOracle,
+      toOracle,
+      amount,
+      recipient,
+      slippage
+    );
   }
 
   function cancelSwap(

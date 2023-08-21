@@ -14,14 +14,15 @@ contract AaveSwapperTest is Test {
   event DepositedIntoV2(address indexed token, uint256 amount);
   event DepositedIntoV3(address indexed token, uint256 amount);
   event GuardianUpdated(address oldGuardian, address newGuardian);
-  event SwapCanceled(address fromToken, address toToken, uint256 amount);
+  event SwapCanceled(address indexed fromToken, address indexed toToken, uint256 amount);
   event SwapRequested(
-    address fromToken,
-    address toToken,
+    address milkman,
+    address indexed fromToken,
+    address indexed toToken,
     address fromOracle,
     address toOracle,
     uint256 amount,
-    address recipient,
+    address indexed recipient,
     uint256 slippage
   );
   event TokenUpdated(address indexed token, bool allowed);
@@ -191,6 +192,7 @@ contract AaveSwapperSwap is AaveSwapperTest {
 
     vm.expectEmit(true, true, true, true);
     emit SwapRequested(
+      MILKMAN,
       AaveV2EthereumAssets.AAVE_UNDERLYING,
       AaveV2EthereumAssets.USDC_UNDERLYING,
       AaveV2EthereumAssets.AAVE_ORACLE,
@@ -267,6 +269,7 @@ contract CancelSwap is AaveSwapperTest {
 
     vm.expectEmit(true, true, true, true);
     emit SwapRequested(
+      MILKMAN,
       AaveV2EthereumAssets.AAVE_UNDERLYING,
       AaveV2EthereumAssets.USDC_UNDERLYING,
       AaveV2EthereumAssets.AAVE_ORACLE,
