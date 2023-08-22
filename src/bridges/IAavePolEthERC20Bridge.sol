@@ -8,6 +8,4 @@ interface IAavePolEthERC20Bridge {
   function exit(bytes calldata burnProof) external;
 
   function withdrawToCollector(address token) external;
-
-  function rescueTokens(address[] calldata tokens) external;
 }

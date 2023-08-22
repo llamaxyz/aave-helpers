@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import {Test} from 'forge-std/Test.sol';
 import {IERC20} from 'solidity-utils/contracts/oz-common/interfaces/IERC20.sol';
 import {AaveV3Ethereum, AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
+import {AaveV2Polygon, AaveV2PolygonAssets} from 'aave-address-book/AaveV2Polygon.sol';
 import {AaveV3Polygon, AaveV3PolygonAssets} from 'aave-address-book/AaveV3Polygon.sol';
 
 import {AavePolEthERC20Bridge} from './AavePolEthERC20Bridge.sol';
@@ -58,44 +59,46 @@ contract BridgeTest is AavePolEthERC20BridgeTest {
   }
 }
 
-contract RescueTokensTest is AavePolEthERC20BridgeTest {
-  function test_revertsIf_invalidChain() public {
-    address[] memory tokens = new address[](1);
-    tokens[0] = AaveV3PolygonAssets.USDC_UNDERLYING;
-    vm.selectFork(mainnetFork);
-
-    vm.expectRevert(AavePolEthERC20Bridge.InvalidChain.selector);
-    bridgePolygon.rescueTokens(tokens);
+contract EmergencyTokenTransfer is AavePolEthERC20BridgeTest {
+  function test_revertsIf_invalidCaller() public {
+    vm.expectRevert('ONLY_RESCUE_GUARDIAN');
+    bridgePolygon.emergencyTokenTransfer(
+      AaveV2PolygonAssets.BAL_UNDERLYING,
+      address(AaveV2Polygon.COLLECTOR),
+      1_000e6
+    );
   }
 
-  function test_successful() public {
-    vm.selectFork(polygonFork);
+  function test_successful_governanceCaller() public {
+    address BAL_WHALE = 0x7Ba7f4773fa7890BaD57879F0a1Faa0eDffB3520;
 
-    uint256 amount = 1_000e6;
+    assertEq(IERC20(AaveV2PolygonAssets.BAL_UNDERLYING).balanceOf(address(bridgePolygon)), 0);
 
-    vm.startPrank(USDC_WHALE);
-    IERC20(AaveV3PolygonAssets.USDC_UNDERLYING).transfer(address(bridgePolygon), amount);
+    uint256 balAmount = 1_000e18;
+
+    vm.startPrank(BAL_WHALE);
+    IERC20(AaveV2PolygonAssets.BAL_UNDERLYING).transfer(address(bridgePolygon), balAmount);
     vm.stopPrank();
 
-    address[] memory tokens = new address[](1);
-    tokens[0] = AaveV3PolygonAssets.USDC_UNDERLYING;
+    assertEq(IERC20(AaveV2PolygonAssets.BAL_UNDERLYING).balanceOf(address(bridgePolygon)), balAmount);
 
-    uint256 balanceCollectorBefore = IERC20(AaveV3PolygonAssets.USDC_UNDERLYING).balanceOf(
-      address(AaveV3Polygon.COLLECTOR)
-    );
-    uint256 balanceBridgeBefore = IERC20(AaveV3PolygonAssets.USDC_UNDERLYING).balanceOf(
-      address(bridgePolygon)
+    uint256 initialCollectorBalBalance = IERC20(AaveV2PolygonAssets.BAL_UNDERLYING).balanceOf(
+      address(AaveV2Polygon.COLLECTOR)
     );
 
-    assertEq(balanceBridgeBefore, amount);
-
-    bridgePolygon.rescueTokens(tokens);
+    vm.startPrank(AaveV2Polygon.EMERGENCY_ADMIN);
+    bridgePolygon.emergencyTokenTransfer(
+      AaveV2PolygonAssets.BAL_UNDERLYING,
+      address(AaveV2Polygon.COLLECTOR),
+      balAmount
+    );
+    vm.stopPrank();
 
     assertEq(
-      IERC20(AaveV3PolygonAssets.USDC_UNDERLYING).balanceOf(address(AaveV3Polygon.COLLECTOR)),
-      balanceCollectorBefore + amount
+      IERC20(AaveV2PolygonAssets.BAL_UNDERLYING).balanceOf(address(AaveV2Polygon.COLLECTOR)),
+      initialCollectorBalBalance + balAmount
     );
-    assertEq(IERC20(AaveV3PolygonAssets.USDC_UNDERLYING).balanceOf(address(bridgePolygon)), 0);
+    assertEq(IERC20(AaveV2PolygonAssets.BAL_UNDERLYING).balanceOf(address(bridgePolygon)), 0);
   }
 }
 

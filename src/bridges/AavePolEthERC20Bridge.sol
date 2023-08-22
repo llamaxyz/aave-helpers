@@ -4,8 +4,9 @@ pragma solidity 0.8.19;
 
 import {IERC20} from 'solidity-utils/contracts/oz-common/interfaces/IERC20.sol';
 import {SafeERC20} from 'solidity-utils/contracts/oz-common/SafeERC20.sol';
+import {Rescuable} from 'solidity-utils/contracts/utils/Rescuable.sol';
 import {AaveV3Ethereum} from 'aave-address-book/AaveV3Ethereum.sol';
-import {AaveV3Polygon} from 'aave-address-book/AaveV3Polygon.sol';
+import {AaveV2Polygon} from 'aave-address-book/AaveV2Polygon.sol';
 
 import {ChainIds} from '../ChainIds.sol';
 import {IAavePolEthERC20Bridge} from './IAavePolEthERC20Bridge.sol';
@@ -22,7 +23,7 @@ interface IERC20Polygon {
   function withdraw(uint256 amount) external;
 }
 
-contract AavePolEthERC20Bridge is IAavePolEthERC20Bridge {
+contract AavePolEthERC20Bridge is Rescuable, IAavePolEthERC20Bridge {
   using SafeERC20 for IERC20;
 
   error InvalidChain();
@@ -74,18 +75,7 @@ contract AavePolEthERC20Bridge is IAavePolEthERC20Bridge {
     emit WithdrawToCollector(token, balance);
   }
 
-  /*
-   * @notice Transfer any tokens accidentally sent to this contract to Aave V3 Polygon Collector
-   * @param tokens List of token addresses
-   */
-  function rescueTokens(address[] calldata tokens) external {
-    if (block.chainid != ChainIds.POLYGON) revert InvalidChain();
-
-    for (uint256 i = 0; i < tokens.length; ++i) {
-      IERC20(tokens[i]).safeTransfer(
-        address(AaveV3Polygon.COLLECTOR),
-        IERC20(tokens[i]).balanceOf(address(this))
-      );
-    }
+  function whoCanRescue() public pure override returns (address) {
+    return AaveV2Polygon.EMERGENCY_ADMIN;
   }
 }
