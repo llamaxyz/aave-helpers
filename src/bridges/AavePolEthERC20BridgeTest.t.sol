@@ -6,6 +6,7 @@ import {IERC20} from 'solidity-utils/contracts/oz-common/interfaces/IERC20.sol';
 import {AaveV3Ethereum, AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 import {AaveV2Polygon, AaveV2PolygonAssets} from 'aave-address-book/AaveV2Polygon.sol';
 import {AaveV3Polygon, AaveV3PolygonAssets} from 'aave-address-book/AaveV3Polygon.sol';
+import {AaveGovernanceV2} from 'aave-address-book/AaveGovernanceV2.sol';
 
 import {AavePolEthERC20Bridge} from './AavePolEthERC20Bridge.sol';
 
@@ -62,11 +63,13 @@ contract BridgeTest is AavePolEthERC20BridgeTest {
 contract EmergencyTokenTransfer is AavePolEthERC20BridgeTest {
   function test_revertsIf_invalidCaller() public {
     vm.expectRevert('ONLY_RESCUE_GUARDIAN');
+    vm.startPrank(makeAddr('random-caller'));
     bridgePolygon.emergencyTokenTransfer(
       AaveV2PolygonAssets.BAL_UNDERLYING,
       address(AaveV2Polygon.COLLECTOR),
       1_000e6
     );
+    vm.stopPrank();
   }
 
   function test_successful_governanceCaller() public {
@@ -86,13 +89,11 @@ contract EmergencyTokenTransfer is AavePolEthERC20BridgeTest {
       address(AaveV2Polygon.COLLECTOR)
     );
 
-    vm.startPrank(AaveV2Polygon.EMERGENCY_ADMIN);
     bridgePolygon.emergencyTokenTransfer(
       AaveV2PolygonAssets.BAL_UNDERLYING,
       address(AaveV2Polygon.COLLECTOR),
       balAmount
     );
-    vm.stopPrank();
 
     assertEq(
       IERC20(AaveV2PolygonAssets.BAL_UNDERLYING).balanceOf(address(AaveV2Polygon.COLLECTOR)),
@@ -158,5 +159,21 @@ contract ExitTest is AavePolEthERC20BridgeTest {
 
     vm.expectRevert('RootChainManager: EXIT_ALREADY_PROCESSED');
     bridgeMainnet.exit(burnProof);
+  }
+}
+
+contract TransferOwnership is AavePolEthERC20BridgeTest {
+  function test_revertsIf_invalidCaller() public {
+    vm.startPrank(makeAddr('random-caller'));
+    vm.expectRevert('Ownable: caller is not the owner');
+    bridgeMainnet.transferOwnership(makeAddr('new-admin'));
+    vm.stopPrank();
+  }
+
+  function test_successful() public {
+    address newAdmin = AaveGovernanceV2.SHORT_EXECUTOR;
+    bridgeMainnet.transferOwnership(newAdmin);
+
+    assertEq(newAdmin, bridgeMainnet.owner());
   }
 }

@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 
 import {IERC20} from 'solidity-utils/contracts/oz-common/interfaces/IERC20.sol';
 import {SafeERC20} from 'solidity-utils/contracts/oz-common/SafeERC20.sol';
+import {Ownable} from 'solidity-utils/contracts/oz-common/Ownable.sol';
 import {Rescuable} from 'solidity-utils/contracts/utils/Rescuable.sol';
 import {AaveV3Ethereum} from 'aave-address-book/AaveV3Ethereum.sol';
 import {AaveV2Polygon} from 'aave-address-book/AaveV2Polygon.sol';
@@ -23,7 +24,7 @@ interface IERC20Polygon {
   function withdraw(uint256 amount) external;
 }
 
-contract AavePolEthERC20Bridge is Rescuable, IAavePolEthERC20Bridge {
+contract AavePolEthERC20Bridge is Ownable, Rescuable, IAavePolEthERC20Bridge {
   using SafeERC20 for IERC20;
 
   error InvalidChain();
@@ -75,7 +76,7 @@ contract AavePolEthERC20Bridge is Rescuable, IAavePolEthERC20Bridge {
     emit WithdrawToCollector(token, balance);
   }
 
-  function whoCanRescue() public pure override returns (address) {
-    return AaveV2Polygon.EMERGENCY_ADMIN;
+  function whoCanRescue() public view override returns (address) {
+    return owner();
   }
 }
